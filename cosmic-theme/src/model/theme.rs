@@ -186,7 +186,8 @@ impl Theme {
     #[inline]
     /// get the built in dark theme
     pub fn dark_default() -> Self {
-        DARK_PALETTE.clone().into()
+        // Bun OS: the built-in dark theme is Aphrody (ThemeBuilder::dark).
+        ThemeBuilder::dark().build()
     }
 
     #[inline]
@@ -924,7 +925,8 @@ impl Default for ThemeBuilder {
         Self {
             palette: DARK_PALETTE.to_owned(),
             spacing: Spacing::default(),
-            corner_radii: CornerRadii::default(),
+            // Bun OS: Omarchy's sharp corners (Hyprland decoration:rounding = 0).
+            corner_radii: CornerRadii::from(crate::Roundness::Square),
             neutral_tint: Default::default(),
             text_tint: Default::default(),
             bg_color: Default::default(),
@@ -935,9 +937,10 @@ impl Default for ThemeBuilder {
             warning: Default::default(),
             destructive: Default::default(),
             frosted: BlurStrength::default(),
-            // cosmic-comp theme settings
-            gaps: (0, 8),
-            active_hint: 3,
+            // cosmic-comp theme settings. Bun OS: Omarchy geometry (Hyprland gaps_out 10, gaps_in 5 = 10 between
+            // windows, border_size 2).
+            gaps: (10, 10),
+            active_hint: 2,
             window_hint: None,
             frosted_windows: false,
             frosted_system_interface: false,
@@ -953,8 +956,27 @@ impl ThemeBuilder {
     #[inline]
     /// Get a builder that is initialized with the default dark theme
     pub fn dark() -> Self {
+        // Bun OS: Aphrody, the WebOS Material 3 dark roles (seed #4c62d9): surface #11131d, surface-container
+        // #1b1e2b, -high #232736, surface-variant #2c3142, on-surface #e1e3f2, primary #a9b8ff, error #ffb4ab.
+        let rgb = |hex: u32| {
+            Srgb::new(
+                ((hex >> 16) & 0xff) as f32 / 255.0,
+                ((hex >> 8) & 0xff) as f32 / 255.0,
+                (hex & 0xff) as f32 / 255.0,
+            )
+        };
         Self {
             palette: DARK_PALETTE.to_owned(),
+            neutral_tint: Some(rgb(0x2c3142)),
+            bg_color: Some(rgb(0x11131d).with_alpha(1.0)),
+            primary_container_bg: Some(rgb(0x1b1e2b).with_alpha(1.0)),
+            secondary_container_bg: Some(rgb(0x232736).with_alpha(1.0)),
+            text_tint: Some(rgb(0xe1e3f2)),
+            accent: Some(rgb(0xa9b8ff)),
+            success: Some(rgb(0x8fd694)),
+            warning: Some(rgb(0xf0c674)),
+            destructive: Some(rgb(0xffb4ab)),
+            window_hint: Some(rgb(0xa9b8ff)),
             ..Default::default()
         }
     }
