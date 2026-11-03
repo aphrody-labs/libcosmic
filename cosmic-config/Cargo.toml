@@ -12,7 +12,6 @@ subscription = ["iced_futures"]
 [dependencies]
 cosmic-settings-daemon = { git = "https://github.com/pop-os/dbus-settings-bindings", optional = true }
 zbus = { workspace = true, default-features = false, optional = true }
-atomicwrites = { git = "https://github.com/jackpot51/rust-atomicwrites" }
 calloop = { version = "0.14.4", optional = true }
 notify = "8.2.0"
 ron.workspace = true
@@ -25,6 +24,10 @@ dirs.workspace = true
 tokio = { workspace = true, optional = true, features = ["time"] }
 async-std = { workspace = true, optional = true }
 tracing.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# Atomic rename-based writes; wasm32 has no filesystem rename, so the browser build writes directly.
+atomicwrites = { git = "https://github.com/jackpot51/rust-atomicwrites" }
 
 [target.'cfg(unix)'.dependencies]
 xdg = "3.0"

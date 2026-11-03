@@ -72,6 +72,7 @@ pub mod calloop;
 
 #[derive(Debug)]
 pub enum Error {
+    #[cfg(not(target_arch = "wasm32"))]
     AtomicWrites(atomicwrites::Error<std::io::Error>),
     InvalidName(String),
     Io(std::io::Error),
@@ -87,6 +88,7 @@ impl fmt::Display for Error {
     #[cold]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            #[cfg(not(target_arch = "wasm32"))]
             Self::AtomicWrites(err) => err.fmt(f),
             Self::InvalidName(name) => write!(f, "invalid config name '{}'", name),
             Self::Io(err) => err.fmt(f),
@@ -112,6 +114,7 @@ impl Error {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl From<atomicwrites::Error<std::io::Error>> for Error {
     fn from(f: atomicwrites::Error<std::io::Error>) -> Self {
         Self::AtomicWrites(f)
@@ -195,6 +198,9 @@ impl Config {
         let system_path =
             known_folders::get_known_folder_path(known_folders::KnownFolder::ProgramFilesCommon)
                 .map(|x| x.join("COSMIC").join(&path));
+        // wasm32 (the browser client) has no system data directory: defaults come from the compiled-in values.
+        #[cfg(not(any(unix, windows)))]
+        let system_path: Option<PathBuf> = None;
 
         Ok(Self {
             system_path,
@@ -228,6 +234,9 @@ impl Config {
         let system_path =
             known_folders::get_known_folder_path(known_folders::KnownFolder::ProgramFilesCommon)
                 .map(|x| x.join("COSMIC").join(&path));
+        // wasm32 (the browser client) has no system data directory: defaults come from the compiled-in values.
+        #[cfg(not(any(unix, windows)))]
+        let system_path: Option<PathBuf> = None;
 
         // Get libcosmic user configuration directory
         let mut user_path = get_config_dir().ok_or(Error::NoConfigDirectory)?;
@@ -468,11 +477,14 @@ impl ConfigTransaction<'_> {
     pub fn commit(self) -> Result<(), Error> {
         let mut updates = self.updates.lock().unwrap();
         for (key_path, data) in updates.drain(..) {
+            #[cfg(not(target_arch = "wasm32"))]
             atomicwrites::AtomicFile::new(
                 key_path,
                 atomicwrites::OverwriteBehavior::AllowOverwrite,
             )
             .write(|file| file.write_all(data.as_bytes()))?;
+            #[cfg(target_arch = "wasm32")]
+            std::fs::write(key_path, data.as_bytes())?;
         }
         Ok(())
     }
