@@ -370,12 +370,16 @@ impl<'a, Message: Clone + 'static> HeaderBar<'a, Message> {
         let is_ssd = self.is_ssd;
 
         // Take ownership of the regions to be packed.
-        let start = std::mem::take(&mut self.start);
+        let mut start = std::mem::take(&mut self.start);
         let center = std::mem::take(&mut self.center);
         let mut end = std::mem::take(&mut self.end);
 
-        // Also packs the window controls at the very end.
-        end.push(self.window_controls(space_xxs));
+        // Packs the window controls at the very end, or at the very start (macOS order) when configured.
+        if crate::config::window_controls_start() {
+            start.insert(0, self.window_controls_start(space_xxs));
+        } else {
+            end.push(self.window_controls(space_xxs));
+        }
 
         let padding = if is_ssd {
             [2, 8, 2, 8]
@@ -442,6 +446,32 @@ impl<'a, Message: Clone + 'static> HeaderBar<'a, Message> {
         }
 
         widget.into()
+    }
+
+    /// Window controls at the start of the header: close, minimize, maximize as full-colour icons from the icon theme
+    /// (`window-close`, `window-minimize`, `window-maximize`/`window-restore`), 12 px inside a 24 px hit area.
+    fn window_controls_start(&mut self, spacing: u16) -> Element<'a, Message> {
+        macro_rules! light {
+            ($name:expr, $on_press:expr) => {{
+                widget::icon::from_name($name)
+                    .apply(widget::button::icon)
+                    .padding(6)
+                    .class(theme::Button::HeaderBar)
+                    .selected(self.focused)
+                    .icon_size(12)
+                    .on_press($on_press)
+            }};
+        }
+
+        widget::row::with_capacity(3)
+            .push_maybe(self.on_close.take().map(|m| light!("window-close", m)))
+            .push_maybe(self.on_minimize.take().map(|m| light!("window-minimize", m)))
+            .push_maybe(self.on_maximize.take().map(|m| {
+                light!(if self.maximized { "window-restore" } else { "window-maximize" }, m)
+            }))
+            .spacing(spacing.saturating_sub(4))
+            .align_y(iced::Alignment::Center)
+            .into()
     }
 
     /// Creates the widget for window controls.

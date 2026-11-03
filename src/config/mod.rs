@@ -49,6 +49,12 @@ pub fn show_minimize() -> bool {
     COSMIC_TK.read().unwrap().show_minimize
 }
 
+/// Pack the window controls at the start of the header bar.
+#[allow(clippy::missing_panics_doc)]
+pub fn window_controls_start() -> bool {
+    COSMIC_TK.read().unwrap().window_controls_start
+}
+
 /// Show maximize button in window header.
 #[allow(clippy::missing_panics_doc)]
 pub fn show_maximize() -> bool {
@@ -95,6 +101,9 @@ pub struct CosmicTk {
     /// Show maximize button in window header.
     pub show_maximize: bool,
 
+    /// Pack the window controls at the start of the header (close, minimize, maximize), macOS order.
+    pub window_controls_start: bool,
+
     /// Preferred icon theme.
     pub icon_theme: String,
 
@@ -117,6 +126,7 @@ impl Default for CosmicTk {
             apply_theme_global: false,
             show_minimize: true,
             show_maximize: true,
+            window_controls_start: false,
             icon_theme: String::from("Cosmic"),
             header_size: Density::Standard,
             interface_density: Density::Standard,
